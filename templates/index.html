@@ -20,7 +20,18 @@
         <button id="btnC" class="pill" data-unit="celsius">°C</button>
       </div>
     </header>
+
+    <section class="search">
+      <div class="searchbar">
+        <input id="query" type="text" placeholder="City, ZIP, landmark, or lat,lon…" autocomplete="off" />
+        <button id="useLocation" title="Use my current location">📍</button>
+      </div>
+      <ul id="suggestions" class="suggestions" aria-label="Autocomplete suggestions"></ul>
+      <p class="hint">Tip: You can paste coordinates like <code>34.05,-118.25</code> or just type a ZIP/City/Landmark.</p>
+    </section>
+    
   </div>
 </body>
+
 
 </html>
