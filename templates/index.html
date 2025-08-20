@@ -11,24 +11,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
-
 <body>
-  <div class="container">
-    <header>
-      <h1>Breeze</h1>
-      <p>Your go-to weather app</p>
+  <div class="app">
+    <header class="header">
+      <h1>🌤️ Breeze</h1>
+      <div class="unit-toggle" role="group" aria-label="Units">
+        <button id="btnF" class="pill active" data-unit="fahrenheit">°F</button>
+        <button id="btnC" class="pill" data-unit="celsius">°C</button>
+      </div>
     </header>
-    <main>
-      <section id="weather">
-        <h2>Current Weather</h2>
-        <div id="weather-info">
-          <!-- Weather information will be dynamically inserted here -->
-        </div>
-      </section>
-    </main>
-    <footer>
-      <p>&copy; 2023 Breeze. All rights reserved.</p>
-    </footer>
   </div>
 </body>
 
