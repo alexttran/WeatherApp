@@ -49,6 +49,28 @@ WMO_TEXT = {
     99: "Thunderstorm with heavy hail",
 }
 
+def wmo_to_icon(code: int, is_day: int | None = 1) -> str:
+    """Map WMO weather code to a Weather Icons CSS class."""
+    day = (is_day or 1) == 1
+    if code == 0:
+        return "wi wi-day-sunny" if day else "wi wi-night-clear"
+    if code in (1, 2):
+        return "wi wi-day-cloudy" if day else "wi wi-night-alt-cloudy"
+    if code == 3:
+        return "wi wi-cloudy"
+    if code in (45, 48):
+        return "wi wi-fog"
+    if code in (51, 53, 55, 56, 57):
+        return "wi wi-sprinkle"
+    if code in (61, 63, 65, 66, 67, 80, 81, 82):
+        return "wi wi-rain"
+    if code in (71, 73, 75, 77, 85, 86):
+        return "wi wi-snow"
+    if code in (95, 96, 99):
+        return "wi wi-thunderstorm"
+    return "wi wi-na"
+
+
 def deg_to_compass(deg: float | None) -> str:
     if deg is None:
         return "—"
