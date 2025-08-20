@@ -156,3 +156,92 @@ def autocomplete():
                 "lon": coords[0],
             })
     return jsonify({"suggestions": suggestions})
+
+@app.route("/api/weather")
+def weather():
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+    except Exception:
+        return jsonify({"error": "Invalid or missing lat/lon"}), 400
+
+    unit = request.args.get("unit", "fahrenheit")
+    temp_unit = "fahrenheit" if unit.lower().startswith("f") else "celsius"
+
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current": ",".join([
+            "temperature_2m",
+            "relative_humidity_2m",
+            "apparent_temperature",
+            "weather_code",
+            "wind_speed_10m",
+            "wind_direction_10m",
+            "is_day",
+            "precipitation",
+            "cloud_cover",
+            "pressure_msl",
+        ]),
+        "daily": ",".join([
+            "weather_code",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "precipitation_probability_max",
+            "wind_speed_10m_max",
+            "wind_gusts_10m_max",
+        ]),
+        "timezone": "auto",
+        "forecast_days": 5,
+        "temperature_unit": temp_unit,
+        "wind_speed_unit": "mph" if temp_unit == "fahrenheit" else "kmh",
+        "precipitation_unit": "inch" if temp_unit == "fahrenheit" else "mm",
+    }
+
+    try:
+        r = requests.get(OPEN_METEO_BASE, params=params, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        return jsonify({"error": f"Open-Meteo request failed: {e}"}), 502
+
+    cur = (data or {}).get("current", {})
+    current = {
+        "temperature": cur.get("temperature_2m"),
+        "apparent_temperature": cur.get("apparent_temperature"),
+        "humidity": cur.get("relative_humidity_2m"),
+        "precipitation": cur.get("precipitation"),
+        "cloud_cover": cur.get("cloud_cover"),
+        "pressure": cur.get("pressure_msl"),
+        "wind_speed": cur.get("wind_speed_10m"),
+        "wind_dir": cur.get("wind_direction_10m"),
+        "is_day": cur.get("is_day", 1),
+        "code": cur.get("weather_code"),
+        "code_text": WMO_TEXT.get(cur.get("weather_code"), "Unknown"),
+        "icon": wmo_to_icon(cur.get("weather_code", 0), cur.get("is_day", 1)),
+        "time": cur.get("time"),
+        "unit_labels": data.get("current_units", {}),
+    }
+
+    daily = data.get("daily", {})
+    days = []
+    for i, date in enumerate(daily.get("time", [])[:5]):
+        code = (daily.get("weather_code", []) or [None])[i]
+        days.append({
+            "date": date,
+            "t_max": (daily.get("temperature_2m_max", []) or [None])[i],
+            "t_min": (daily.get("temperature_2m_min", []) or [None])[i],
+            "pop": (daily.get("precipitation_probability_max", []) or [None])[i],
+            "wind_max": (daily.get("wind_speed_10m_max", []) or [None])[i],
+            "gust_max": (daily.get("wind_gusts_10m_max", []) or [None])[i],
+            "code": code,
+            "code_text": WMO_TEXT.get(code, ""),
+            "icon": wmo_to_icon(code, 1),
+        })
+
+    return jsonify({
+        "location": {"lat": lat, "lon": lon},
+        "unit": temp_unit,
+        "current": current,
+        "daily": days,
+    })
