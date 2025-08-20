@@ -125,3 +125,34 @@ def autocomplete():
                 "lon": coords[0],
             })
     return jsonify({"suggestions": suggestions})
+
+@app.route("/api/autocomplete")
+def autocomplete():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"features": []})
+
+    if not GEOCODIFY_API_KEY:
+        return jsonify({"error": "Missing GEOCODIFY_API_KEY on server"}), 500
+
+    url = "https://api.geocodify.com/v2/autocomplete"
+    try:
+        r = requests.get(url, params={"api_key": GEOCODIFY_API_KEY, "q": q}, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as e:
+        return jsonify({"error": f"Autocomplete failed: {e}"}), 502
+
+    suggestions: List[Dict[str, Any]] = []
+    feats = (data or {}).get("features", [])
+    for f in feats[:10]:
+        props = f.get("properties", {})
+        geom = f.get("geometry", {})
+        coords = geom.get("coordinates", [None, None])
+        if coords and len(coords) >= 2:
+            suggestions.append({
+                "label": props.get("label") or props.get("name") or props.get("formatted") or q,
+                "lat": coords[1],
+                "lon": coords[0],
+            })
+    return jsonify({"suggestions": suggestions})
