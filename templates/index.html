@@ -29,7 +29,18 @@
       <ul id="suggestions" class="suggestions" aria-label="Autocomplete suggestions"></ul>
       <p class="hint">Tip: You can paste coordinates like <code>34.05,-118.25</code> or just type a ZIP/City/Landmark.</p>
     </section>
-    
+
+    <main class="grid">
+      <section class="card current" id="current">
+        <div class="loading">Search a place to see weather…</div>
+      </section>
+
+      <section class="card forecast">
+        <h2>Next 5 Days</h2>
+        <div id="forecast" class="forecast-grid"></div>
+      </section>
+    </main>
+
   </div>
 </body>
 
