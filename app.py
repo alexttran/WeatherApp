@@ -14,6 +14,7 @@ app = Flask(__name__)
 # ====== Configuration ======
 GEOCODIFY_API_KEY = os.getenv("GEOCODIFY_API_KEY", "")
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
+HEADERS = {"Accept": "application/json", "User-Agent": "BreezeWeather/1.0 (+local)"}
 
 # ====== Helpers ======
 COORDS_RE = re.compile(r"^\s*([+-]?(?:\d+(?:\.\d+)?)),\s*([+-]?(?:\d+(?:\.\d+)?))\s*$")
@@ -95,35 +96,55 @@ def parse_coords(text: str) -> Tuple[float, float] | None:
 def index():
     return render_template("index.html")
 
+def _geo_get(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    url = f"https://api.geocodify.com/v2/{endpoint}"
+    try:
+        r = requests.get(url, params=params, headers=HEADERS, timeout=10)
+        if r.status_code == 429:
+           return {"_error": "rate_limited"}
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        return {"_error": str(e)}
+
+def _extract_suggestions(data: Dict[str, Any], limit: int = 10):
+    out = []
+    if not data:
+        return out
+    if data.get("_error") == "rate_limited":
+        return [{"label": "Rate-limited: pause typing for a second…", "lat": None, "lon": None, "disabled": True}]
+    feats = data.get("features") or data.get("results") or data.get("data") or []
+    if isinstance(feats, dict):
+        feats = [feats]
+    for f in feats[:limit]:
+        props = (f or {}).get("properties", {})
+        geom = (f or {}).get("geometry", {})
+        label = props.get("label") or props.get("name") or props.get("formatted") or f.get("text") or f.get("name")
+        lat = None
+        lon = None
+        coords = geom.get("coordinates")
+        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            lon, lat = coords[0], coords[1]
+        else:
+            lat = (f or {}).get("lat") or props.get("lat") or props.get("latitude")
+            lon = (f or {}).get("lng") or props.get("lon") or props.get("longitude")
+        if label and lat is not None and lon is not None:
+            out.append({"label": label, "lat": float(lat), "lon": float(lon)})
+    return out
+
 @app.route("/api/autocomplete")
 def autocomplete():
     q = request.args.get("q", "").strip()
-    if not q:
-        return jsonify({"features": []})
-
+    if len(q) < 3:
+        return jsonify({"suggestions": []})
     if not GEOCODIFY_API_KEY:
         return jsonify({"error": "Missing GEOCODIFY_API_KEY on server"}), 500
-
-    url = "https://api.geocodify.com/v2/autocomplete"
-    try:
-        r = requests.get(url, params={"api_key": GEOCODIFY_API_KEY, "q": q}, timeout=10)
-        r.raise_for_status()
-        data = r.json()
-    except Exception as e:
-        return jsonify({"error": f"Autocomplete failed: {e}"}), 502
-
-    suggestions: List[Dict[str, Any]] = []
-    feats = (data or {}).get("features", [])
-    for f in feats[:10]:
-        props = f.get("properties", {})
-        geom = f.get("geometry", {})
-        coords = geom.get("coordinates", [None, None])
-        if coords and len(coords) >= 2:
-            suggestions.append({
-                "label": props.get("label") or props.get("name") or props.get("formatted") or q,
-                "lat": coords[1],
-                "lon": coords[0],
-            })
+    data = _geo_get("autocomplete", {"api_key": GEOCODIFY_API_KEY, "q": q})
+    if data.get("_error") == "rate_limited":
+        return jsonify({"suggestions": [{"label": "Rate-limited: pause typing for a second…", "lat": None, "lon": None, "disabled": True}]})
+    if "_error" in data:
+        return jsonify({"error": f"Autocomplete failed: {data['_error']}"}), 502
+    suggestions = _extract_suggestions(data)
     return jsonify({"suggestions": suggestions})
 
 @app.route("/api/geocode")
@@ -135,34 +156,16 @@ def geocode():
     coords = parse_coords(q)
     if coords:
         return jsonify({"label": q, "lat": coords[0], "lon": coords[1]})
-
     if not GEOCODIFY_API_KEY:
         return jsonify({"error": "Missing GEOCODIFY_API_KEY on server"}), 500
-
-    try:
-        r = requests.get("https://api.geocodify.com/v2/geocode",
-                         params={"api_key": GEOCODIFY_API_KEY, "q": q}, timeout=10)
-        r.raise_for_status()
-        data = r.json()
-    except Exception as e:
-        return jsonify({"error": f"Geocoding failed: {e}"}), 502
-
-    feats = (data or {}).get("features", [])
-    if not feats:
-        return jsonify({"error": "No results"}), 404
-
-    f0 = feats[0]
-    props = f0.get("properties", {})
-    geom = f0.get("geometry", {})
-    coords = geom.get("coordinates", [None, None])
-    if not coords or len(coords) < 2:
-        return jsonify({"error": "Bad geocode response"}), 502
-
-    return jsonify({
-        "label": props.get("label") or props.get("name") or q,
-        "lat": coords[1],
-        "lon": coords[0],
-    })
+    
+    data = _geo_get("geocode", {"api_key": GEOCODIFY_API_KEY, "q": q})
+    if data.get("_error") == "rate_limited":
+        return jsonify({"error": "Geocodify rate limit hit. Type slower or upgrade the plan."}), 429
+    if "_error" in data:
+        return jsonify({"error": f"Geocoding failed: {data['_error']}"}), 502
+    c = data['response']['features'][0]['geometry']['coordinates']
+    return jsonify({"label": q, "lat": c[1], "lon": c[0]})
 
 @app.route("/api/weather")
 def weather():
@@ -206,7 +209,7 @@ def weather():
     }
 
     try:
-        r = requests.get(OPEN_METEO_BASE, params=params, timeout=15)
+        r = requests.get(OPEN_METEO_BASE, params=params, headers=HEADERS, timeout=15)
         r.raise_for_status()
         data = r.json()
     except Exception as e:

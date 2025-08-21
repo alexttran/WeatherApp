@@ -1,5 +1,6 @@
+//const $ = (sel) => document.querySelector(sel);
+//const $list = (sel) => document.querySelectorAll(sel);
 const $ = (sel) => document.querySelector(sel);
-const $list = (sel) => document.querySelectorAll(sel);
 
 const queryEl = $("#query");
 const suggEl = $("#suggestions");
@@ -39,32 +40,44 @@ btnC.addEventListener("click", () => {
 });
 
 // Autocomplete functionality
-let acTimer;
+let acTimer; let lastAC = "";
 queryEl.addEventListener("input", () => {
   const q = queryEl.value.trim();
   clearTimeout(acTimer);
-  if (!q) { suggEl.classList.remove("show"); suggEl.innerHTML = ""; return; }
+  if (q.length < 3) { suggEl.classList.remove("show"); suggEl.innerHTML = ""; return; }
   acTimer = setTimeout(async () => {
     try {
+      if (q === lastAC) return;
+      lastAC = q;
       const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(q)}`);
       const data = await res.json();
-      const items = (data.suggestions || []).map(s => `<li data-lat="${s.lat}" data-lon="${s.lon}">${escapeHtml(s.label)}</li>`).join("");
+      if (data.error) {
+        suggEl.innerHTML = `<li>${escapeHtml(data.error)}</li>`;
+        suggEl.classList.add("show");
+        return;
+      }
+      const items = (data.suggestions || []).map(s => {
+        const disabled = s.disabled ? ' aria-disabled="true" class="disabled"' : '';
+        return `<li data-lat="${s.lat}" data-lon="${s.lon}"${disabled}>${escapeHtml(s.label)}</li>`;
+      }).join("");
       if (items) {
         suggEl.innerHTML = items;
         suggEl.classList.add("show");
       } else {
         suggEl.classList.remove("show");
+        suggEl.innerHTML = "";
       }
     } catch (e) {
-      suggEl.classList.remove("show");
+      suggEl.innerHTML = `<li>Autocomplete error. Try again.</li>`;
+      suggEl.classList.add("show");
     }
-  }, 180);
+  }, 750);
 });
 
 // Enter autocomplete suggestion
 suggEl.addEventListener("click", (e) => {
   const li = e.target.closest("li");
-  if (!li) return;
+  if (!li || li.classList.contains("disabled")) return;
   const lat = parseFloat(li.dataset.lat);
   const lon = parseFloat(li.dataset.lon);
   queryEl.value = li.textContent;
@@ -77,6 +90,7 @@ queryEl.addEventListener("keydown", async (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     const q = queryEl.value.trim();
+    console.log(q);
     if (!q) return;
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
