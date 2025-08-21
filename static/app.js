@@ -1,3 +1,15 @@
+const $ = (sel) => document.querySelector(sel);
+const $list = (sel) => document.querySelectorAll(sel);
+
+const queryEl = $("#query");
+const suggEl = $("#suggestions");
+const currentEl = $("#current");
+const forecastEl = $("#forecast");
+const btnF = $("#btnF");
+const btnC = $("#btnC");
+const useLocBtn = $("#useLocation");
+
+let UNIT = "fahrenheit"; // default
 
 // Temperature Unit toggle functionality
 function setUnit(u) {
