@@ -131,3 +131,29 @@ function renderCurrent(c, unit) {
     </div>
   `;
 }
+
+// Renders weather forecast for next days
+function renderForecast(days, unit) {
+  const tempUnit = unit === "fahrenheit" ? "°F" : "°C";
+  forecastEl.innerHTML = days.map(d => `
+    <div class="day">
+      <div>${new Date(d.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+      <i class="${d.icon}"></i>
+      <div>${escapeHtml(d.code_text)}</div>
+      <div class="t">${Math.round(d.t_max)}${tempUnit} / ${Math.round(d.t_min)}${tempUnit}</div>
+      <div class="pop">💧 ${d.pop ?? 0}% · 💨 ${Math.round(d.wind_max)} ${unit === 'fahrenheit' ? 'mph' : 'km/h'}</div>
+    </div>
+  `).join("");
+}
+
+function stat(label, value){
+  return `<div class="stat"><label>${escapeHtml(label)}</label><div class="value">${escapeHtml(String(value))}</div></div>`;
+}
+
+function showError(msg){
+  currentEl.innerHTML = `<div class="loading">${escapeHtml(msg)}</div>`;
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"]|\u2028|\u2029/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\u2028':'\\u2028','\u2029':'\\u2029'}[c]));
+}
