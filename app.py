@@ -126,36 +126,43 @@ def autocomplete():
             })
     return jsonify({"suggestions": suggestions})
 
-@app.route("/api/autocomplete")
-def autocomplete():
+@app.route("/api/geocode")
+def geocode():
     q = request.args.get("q", "").strip()
     if not q:
-        return jsonify({"features": []})
+        return jsonify({"error": "Missing query"}), 400
+
+    coords = parse_coords(q)
+    if coords:
+        return jsonify({"label": q, "lat": coords[0], "lon": coords[1]})
 
     if not GEOCODIFY_API_KEY:
         return jsonify({"error": "Missing GEOCODIFY_API_KEY on server"}), 500
 
-    url = "https://api.geocodify.com/v2/autocomplete"
     try:
-        r = requests.get(url, params={"api_key": GEOCODIFY_API_KEY, "q": q}, timeout=10)
+        r = requests.get("https://api.geocodify.com/v2/geocode",
+                         params={"api_key": GEOCODIFY_API_KEY, "q": q}, timeout=10)
         r.raise_for_status()
         data = r.json()
     except Exception as e:
-        return jsonify({"error": f"Autocomplete failed: {e}"}), 502
+        return jsonify({"error": f"Geocoding failed: {e}"}), 502
 
-    suggestions: List[Dict[str, Any]] = []
     feats = (data or {}).get("features", [])
-    for f in feats[:10]:
-        props = f.get("properties", {})
-        geom = f.get("geometry", {})
-        coords = geom.get("coordinates", [None, None])
-        if coords and len(coords) >= 2:
-            suggestions.append({
-                "label": props.get("label") or props.get("name") or props.get("formatted") or q,
-                "lat": coords[1],
-                "lon": coords[0],
-            })
-    return jsonify({"suggestions": suggestions})
+    if not feats:
+        return jsonify({"error": "No results"}), 404
+
+    f0 = feats[0]
+    props = f0.get("properties", {})
+    geom = f0.get("geometry", {})
+    coords = geom.get("coordinates", [None, None])
+    if not coords or len(coords) < 2:
+        return jsonify({"error": "Bad geocode response"}), 502
+
+    return jsonify({
+        "label": props.get("label") or props.get("name") or q,
+        "lat": coords[1],
+        "lon": coords[0],
+    })
 
 @app.route("/api/weather")
 def weather():
