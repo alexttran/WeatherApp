@@ -92,3 +92,42 @@ useLocBtn.addEventListener("click", () => {
     showError("Location permission denied or unavailable.");
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
 });
+
+// function for getting weather data
+async function fetchWeather(lat, lon) {
+  currentEl.innerHTML = `<div class="loading">Loading weather…</div>`;
+  try {
+    const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}&unit=${UNIT}`);
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    currentEl.dataset.coords = JSON.stringify({ lat, lon });
+    renderCurrent(data.current, data.unit);
+    renderForecast(data.daily, data.unit);
+  } catch (e) {
+    showError("Failed to load weather.");
+  }
+}
+
+// Renders the current weather
+function renderCurrent(c, unit) {
+  const tempUnit = unit === "fahrenheit" ? "°F" : "°C";
+  const windUnit = unit === "fahrenheit" ? "mph" : "km/h";
+  const precipUnit = unit === "fahrenheit" ? "in" : "mm";
+
+  currentEl.innerHTML = `
+    <div class="row">
+      <i class="big ${c.icon}"></i>
+      <div>
+        <div class="h1" style="font-size:32px; font-weight:800;">${Math.round(c.temperature)}${tempUnit} · ${escapeHtml(c.code_text)}</div>
+        <div style="color:#8aa0b6; margin-top:4px;">Feels like ${Math.round(c.apparent_temperature)}${tempUnit} · ${new Date(c.time).toLocaleString()}</div>
+      </div>
+    </div>
+    <div class="meta">
+      ${stat("Humidity", `${c.humidity}%`)}
+      ${stat("Wind", `${Math.round(c.wind_speed)} ${windUnit} ${degToCompass(c.wind_dir)}`)}
+      ${stat("Precipitation", `${c.precipitation ?? 0} ${precipUnit}`)}
+      ${stat("Cloud Cover", `${c.cloud_cover}%`)}
+      ${stat("Pressure", `${Math.round(c.pressure)} hPa`)}
+    </div>
+  `;
+}
