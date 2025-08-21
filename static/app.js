@@ -26,6 +26,7 @@ btnC.addEventListener("click", () => {
   }
 });
 
+// Autocomplete functionality
 let acTimer;
 queryEl.addEventListener("input", () => {
   const q = queryEl.value.trim();
@@ -48,6 +49,7 @@ queryEl.addEventListener("input", () => {
   }, 180);
 });
 
+// Enter autocomplete suggestion
 suggEl.addEventListener("click", (e) => {
   const li = e.target.closest("li");
   if (!li) return;
@@ -56,4 +58,37 @@ suggEl.addEventListener("click", (e) => {
   queryEl.value = li.textContent;
   suggEl.classList.remove("show");
   fetchWeather(lat, lon);
+});
+
+// Search enter button call
+queryEl.addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const q = queryEl.value.trim();
+    if (!q) return;
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+      const g = await res.json();
+      if (g.lat && g.lon) {
+        fetchWeather(g.lat, g.lon);
+      } else {
+        showError(g.error || "No results");
+      }
+    } catch(err){
+      showError("Geocoding failed");
+    }
+  }
+});
+
+// Use current location button
+useLocBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    return showError("Geolocation not supported in this browser.");
+  }
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const { latitude, longitude } = pos.coords;
+    fetchWeather(latitude, longitude);
+  }, (err) => {
+    showError("Location permission denied or unavailable.");
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
 });
