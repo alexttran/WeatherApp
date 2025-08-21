@@ -1,3 +1,12 @@
+:root {
+  --bg: #0b0f14;
+  --card: #111826;
+  --muted: #8aa0b6;
+  --text: #f2f6fb;
+  --accent: #3b82f6;
+  --pill: #1f2937;
+}
+
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: linear-gradient(180deg, #0b1220 0%, #0b0f14 100%); color: var(--text); }
 .app { max-width: 980px; margin: 0 auto; padding: 24px; }
