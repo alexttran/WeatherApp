@@ -232,9 +232,7 @@ def weather():
         "time": cur.get("time"),
         "unit_labels": data.get("current_units", {}),
     }
-    print(data)
     daily = data.get("daily", {})
-    print(daily)
     days = []
     for i, date in enumerate(daily.get("time", [])[2:7]):
         code = (daily.get("weather_code", []) or [None])[i]
@@ -249,7 +247,6 @@ def weather():
             "code_text": WMO_TEXT.get(code, ""),
             "icon": wmo_to_icon(code, 1),
         })
-    print(days)
     return jsonify({
         "location": {"lat": lat, "lon": lon},
         "unit": temp_unit,
