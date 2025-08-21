@@ -43,7 +43,7 @@ queryEl.addEventListener("input", () => {
         suggEl.classList.remove("show");
       }
     } catch (e) {
-      
+      suggEl.classList.remove("show");
     }
   }, 180);
 });
