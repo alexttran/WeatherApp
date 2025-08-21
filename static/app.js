@@ -154,6 +154,19 @@ function showError(msg){
   currentEl.innerHTML = `<div class="loading">${escapeHtml(msg)}</div>`;
 }
 
+function degToCompass(deg){
+  if (deg == null) return "";
+  const val = Math.floor((deg / 22.5) + 0.5);
+  const arr = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]; 
+  return arr[val % 16];
+}
+
 function escapeHtml(s){
   return s.replace(/[&<>"]|\u2028|\u2029/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\u2028':'\\u2028','\u2029':'\\u2029'}[c]));
+}
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition((pos) => {
+    fetchWeather(pos.coords.latitude, pos.coords.longitude);
+  });
 }
