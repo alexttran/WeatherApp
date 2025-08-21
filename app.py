@@ -202,7 +202,7 @@ def weather():
             "wind_gusts_10m_max",
         ]),
         "timezone": "auto",
-        "forecast_days": 5,
+        "forecast_days": 7,
         "temperature_unit": temp_unit,
         "wind_speed_unit": "mph" if temp_unit == "fahrenheit" else "kmh",
         "precipitation_unit": "inch" if temp_unit == "fahrenheit" else "mm",
@@ -232,10 +232,11 @@ def weather():
         "time": cur.get("time"),
         "unit_labels": data.get("current_units", {}),
     }
-
+    print(data)
     daily = data.get("daily", {})
+    print(daily)
     days = []
-    for i, date in enumerate(daily.get("time", [])[:5]):
+    for i, date in enumerate(daily.get("time", [])[2:7]):
         code = (daily.get("weather_code", []) or [None])[i]
         days.append({
             "date": date,
@@ -248,7 +249,7 @@ def weather():
             "code_text": WMO_TEXT.get(code, ""),
             "icon": wmo_to_icon(code, 1),
         })
-
+    print(days)
     return jsonify({
         "location": {"lat": lat, "lon": lon},
         "unit": temp_unit,
