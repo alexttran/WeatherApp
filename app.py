@@ -14,7 +14,7 @@ app = Flask(__name__)
 # ====== Configuration ======
 GEOCODIFY_API_KEY = os.getenv("GEOCODIFY_API_KEY", "")
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
-HEADERS = {"Accept": "application/json", "User-Agent": "BreezeWeather/1.0 (+local)"}
+HEADERS = {"Accept": "application/json", "User-Agent": "WeatherApp/1.0 (+local)"}
 
 # ====== Helpers ======
 COORDS_RE = re.compile(r"^\s*([+-]?(?:\d+(?:\.\d+)?)),\s*([+-]?(?:\d+(?:\.\d+)?))\s*$")
