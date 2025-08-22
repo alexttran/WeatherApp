@@ -274,3 +274,35 @@ function renderSaved(list) {
     `;
   }).join("");
 }
+
+async function deleteRequest(id) {
+  if (!confirm("Delete this request?")) return;
+  const res = await fetch(`/api/requests/${id}`, { method: "DELETE", headers: authHeaders() });
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) return showError(data.error || "Delete failed");
+  fetchSaved();
+}
+
+async function editRequestPrompt(id, rowEl) {
+  // Simple prompts; you could switch to an inline edit UI later
+  const current = rowEl.querySelector(".meta").textContent;
+  const parts = current.split("•")[0].trim().split("→").map(s => s.trim());
+  const start0 = parts[0]; const end0 = parts[1];
+  const newStart = prompt("New start date (YYYY-MM-DD):", start0) || start0;
+  const newEnd = prompt("New end date (YYYY-MM-DD):", end0) || end0;
+  const unit0 = /celsius/i.test(current) ? "celsius" : "fahrenheit";
+  const newUnit = prompt("Unit (fahrenheit|celsius):", unit0) || unit0;
+  const body = {};
+  if (newStart !== start0) body.start_date = newStart;
+  if (newEnd !== end0) body.end_date = newEnd;
+  if (newUnit !== unit0) body.unit = newUnit;
+  if (Object.keys(body).length === 0) return;
+  const res = await fetch(`/api/requests/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) return showError(data.error || "Update failed");
+  fetchSaved();
+}
