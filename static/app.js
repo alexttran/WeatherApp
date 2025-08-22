@@ -15,6 +15,10 @@ const saveBtn = $("#saveReq");
 const refreshBtn = $("#refreshSaved");
 const savedListEl = $("#savedList");
 
+function authHeaders(extra={}) {
+  return extra;
+}
+
 let UNIT = "fahrenheit"; // default
 
 // Temperature Unit toggle functionality
