@@ -306,3 +306,23 @@ async function editRequestPrompt(id, rowEl) {
   if (!res.ok) return showError(data.error || "Update failed");
   fetchSaved();
 }
+
+saveBtn.addEventListener("click", saveRequest);
+refreshBtn.addEventListener("click", fetchSaved);
+savedListEl.addEventListener("click", (e) => {
+  const row = e.target.closest(".saved-item");
+  if (!row) return;
+  const id = row.dataset.id;
+  if (e.target.classList.contains("view")) {
+    const lat = parseFloat(row.dataset.lat), lon = parseFloat(row.dataset.lon);
+    // Reuse the existing weather viewer
+    fetchWeather(lat, lon);
+  } else if (e.target.classList.contains("edit")) {
+    editRequestPrompt(id, row);
+  } else if (e.target.classList.contains("delete")) {
+    deleteRequest(id);
+  }
+});
+
+// Load saved requests on startup
+fetchSaved();
