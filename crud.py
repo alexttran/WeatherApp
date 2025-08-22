@@ -59,3 +59,42 @@ def upsert_location(label: str, lat: float, lon: float) -> int:
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute(sql, (label, lat, lon))
         return cur.fetchone()[0]
+    
+
+def create_weather_request(loc: Dict[str, Any], start_s: str, end_s: str, unit: str = "fahrenheit") -> int:
+    start, end = validate_range(start_s, end_s)
+    unit = "celsius" if str(unit).lower().startswith("c") else "fahrenheit"
+    loc_id = upsert_location(loc["label"], float(loc["lat"]), float(loc["lon"]))
+    sql = """
+    INSERT INTO weather_requests (location_id, start_date, end_date, unit)
+    VALUES (%s, %s, %s, %s)
+    RETURNING id;
+    """
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(sql, (loc_id, start, end, unit))
+        return cur.fetchone()[0]
+
+def list_requests_db(limit: int = 200) -> List[Dict[str, Any]]:
+    sql = """
+      SELECT wr.id, wr.start_date, wr.end_date, wr.unit, wr.created_at,
+             l.id AS location_id, l.label, l.lat, l.lon
+      FROM weather_requests wr
+      JOIN locations l ON wr.location_id = l.id
+      ORDER BY wr.created_at DESC
+      LIMIT %s;
+    """
+    with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (limit,))
+        return cur.fetchall()
+
+def get_request_db(req_id: int) -> Optional[Dict[str, Any]]:
+    sql = """
+      SELECT wr.id, wr.start_date, wr.end_date, wr.unit, wr.created_at,
+             l.id AS location_id, l.label, l.lat, l.lon
+      FROM weather_requests wr
+      JOIN locations l ON wr.location_id = l.id
+      WHERE wr.id = %s;
+    """
+    with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (req_id,))
+        return cur.fetchone()
