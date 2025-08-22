@@ -7,6 +7,17 @@ import requests
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
+from psycopg2.extras import RealDictCursor
+from crud import (
+    resolve_location_from_query,
+    create_weather_request,
+    list_requests_db,
+    get_request_db,
+    update_request_db,
+    relabel_location_db,
+    delete_request_db,
+)
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -253,6 +264,53 @@ def weather():
         "current": current,
         "daily": days,
     })
+
+@app.post("/api/requests")
+def create_request_api():
+    """
+    Body can be either:
+      {"query":"Eiffel Tower","start_date":"2025-08-01","end_date":"2025-08-05","unit":"fahrenheit"}
+    or {"lat":48.8584,"lon":2.2945,"label":"Eiffel Tower","start_date":"...","end_date":"..."}
+    """
+    p = request.get_json(force=True)
+    try:
+        if "lat" in p and "lon" in p:
+            loc = {
+                "label": p.get("label") or f"{p['lat']},{p['lon']}",
+                "lat": float(p["lat"]), "lon": float(p["lon"])
+            }
+        else:
+            q = (p.get("query") or "").strip()
+            if not q:
+                return jsonify({"error": "Provide query or lat/lon"}), 400
+            loc = resolve_location_from_query(q)
+
+        req_id = create_weather_request(
+            loc,
+            p["start_date"],
+            p["end_date"],
+            p.get("unit", "fahrenheit"),
+        )
+        return jsonify({"id": req_id, "message": "Saved"}), 201
+    except KeyError as ke:
+        return jsonify({"error": f"Missing field: {ke}"}), 400
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Create failed: {e}"}), 500
+    
+@app.get("/api/requests")
+def list_requests_api():
+    rows = list_requests_db(limit=200)
+    return jsonify(rows)
+
+
+@app.get("/api/requests/<int:req_id>")
+def get_request_api(req_id: int):
+    row = get_request_db(req_id)
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(row)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
