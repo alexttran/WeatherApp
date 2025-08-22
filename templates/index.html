@@ -30,6 +30,13 @@
       <p class="hint">Tip: You can paste coordinates like <code>34.05,-118.25</code> or just type a ZIP/City/Landmark.</p>
     </section>
 
+    <div class="range">
+      <input id="startDate" type="date" aria-label="Start date" />
+      <input id="endDate" type="date" aria-label="End date" />
+      <button id="saveReq" class="pill">Save to DB</button>
+      <button id="refreshSaved" class="pill secondary">Refresh</button>
+    </div>
+
     <main class="grid">
       <section class="card current" id="current">
         <div class="loading">Search a place to see weather…</div>
@@ -40,6 +47,13 @@
         <div id="forecast" class="forecast-grid"></div>
       </section>
     </main>
+
+    <section class="card saved">
+      <h2>Saved Requests</h2>
+      <div id="savedList" class="saved-list">
+        <div class="empty">No saved requests yet.</div>
+      </div>
+    </section>
 
     <footer class="footer">
       <small>
