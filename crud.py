@@ -98,3 +98,43 @@ def get_request_db(req_id: int) -> Optional[Dict[str, Any]]:
     with get_conn() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql, (req_id,))
         return cur.fetchone()
+
+# Updates the weather request with the given ID
+def update_request_db(req_id: int, start_s: str | None, end_s: str | None, unit: str | None) -> bool:
+    sets, args = [], []
+    if unit:
+        sets.append("unit = %s")
+        args.append("celsius" if unit.lower().startswith("c") else "fahrenheit")
+    if start_s or end_s:
+        # If only one side is provided, reuse the other from current row
+        cur_row = get_request_db(req_id)
+        if not cur_row:
+            return False
+        start = start_s or str(cur_row["start_date"])
+        end = end_s or str(cur_row["end_date"])
+        s, e = validate_range(start, end)
+        sets.append("start_date = %s")
+        sets.append("end_date = %s")
+        args.extend([s, e])
+
+    if not sets:
+        return True  # nothing to change
+
+    sql = f"UPDATE weather_requests SET {', '.join(sets)} WHERE id = %s"
+    args.append(req_id)
+
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(sql, tuple(args))
+        return cur.rowcount > 0
+
+# Relabels a location in the database
+def relabel_location_db(loc_id: int, label: str) -> bool:
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE locations SET label = %s WHERE id = %s", (label, loc_id))
+        return cur.rowcount > 0
+
+# Deletes the weather request with the given ID
+def delete_request_db(req_id: int) -> bool:
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM weather_requests WHERE id = %s", (req_id,))
+        return cur.rowcount > 0
