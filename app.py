@@ -312,5 +312,43 @@ def get_request_api(req_id: int):
         return jsonify({"error": "Not found"}), 404
     return jsonify(row)
 
+@app.put("/api/requests/<int:req_id>")
+def update_request_api(req_id: int):
+    p = request.get_json(force=True)
+    try:
+        ok = update_request_db(
+            req_id,
+            p.get("start_date"),
+            p.get("end_date"),
+            p.get("unit"),
+        )
+        if not ok:
+            return jsonify({"error": "Not found"}), 404
+        return jsonify({"message": "Updated"})
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Update failed: {e}"}), 500
+
+
+@app.put("/api/locations/<int:loc_id>")
+def relabel_location_api(loc_id: int):
+    p = request.get_json(force=True)
+    label = (p.get("label") or "").strip()
+    if not label:
+        return jsonify({"error": "label required"}), 400
+    ok = relabel_location_db(loc_id, label)
+    if not ok:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"message": "Updated"})
+
+
+@app.delete("/api/requests/<int:req_id>")
+def delete_request_api(req_id: int):
+    ok = delete_request_db(req_id)
+    if not ok:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"message": "Deleted"})
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
