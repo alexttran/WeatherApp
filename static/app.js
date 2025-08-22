@@ -9,6 +9,11 @@ const forecastEl = $("#forecast");
 const btnF = $("#btnF");
 const btnC = $("#btnC");
 const useLocBtn = $("#useLocation");
+const startInput = $("#startDate");
+const endInput = $("#endDate");
+const saveBtn = $("#saveReq");
+const refreshBtn = $("#refreshSaved");
+const savedListEl = $("#savedList");
 
 let UNIT = "fahrenheit"; // default
 
@@ -195,4 +200,41 @@ if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition((pos) => {
     fetchWeather(pos.coords.latitude, pos.coords.longitude);
   });
+}
+
+function iso(d){ return d?.toString().slice(0,10); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function ensureDates(){
+  const s = startInput.value, e = endInput.value;
+  if (!s || !e) throw new Error("Please select both start and end dates.");
+  if (e < s) throw new Error("End date must be on/after start date.");
+  return { start_date: s, end_date: e };
+}
+
+async function saveRequest() {
+  try {
+    const { start_date, end_date } = ensureDates();
+    let body;
+    // Prefer the last fetched coords if available
+    const coordsStr = currentEl.dataset.coords;
+    if (coordsStr) {
+      const { lat, lon } = JSON.parse(coordsStr);
+      body = { lat, lon, label: $("#query").value || undefined, start_date, end_date, unit: UNIT };
+    } else {
+      // Otherwise, use the text query and let the server resolve it once
+      const q = $("#query").value.trim();
+      if (!q) throw new Error("Enter a location or fetch weather first.");
+      body = { query: q, start_date, end_date, unit: UNIT };
+    }
+    const res = await fetch("/api/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Save failed");
+    await fetchSaved(); // refresh list
+  } catch (e) {
+    showError(e.message || "Save failed");
+  }
 }
