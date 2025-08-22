@@ -211,6 +211,7 @@ function ensureDates(){
   return { start_date: s, end_date: e };
 }
 
+// Saves the weather request to database
 async function saveRequest() {
   try {
     const { start_date, end_date } = ensureDates();
@@ -237,4 +238,39 @@ async function saveRequest() {
   } catch (e) {
     showError(e.message || "Save failed");
   }
+}
+
+// Gets the saved requests
+async function fetchSaved() {
+  try {
+    const res = await fetch("/api/requests", { headers: authHeaders() });
+    const list = await res.json();
+    renderSaved(list);
+  } catch {
+    savedListEl.innerHTML = `<div class="empty">Could not load saved requests.</div>`;
+  }
+}
+
+// Renders the saved requests
+function renderSaved(list) {
+  if (!list || list.length === 0) {
+    savedListEl.innerHTML = `<div class="empty">No saved requests yet.</div>`;
+    return;
+  }
+  savedListEl.innerHTML = list.map(r => {
+    const loc = `${Number(r.lat).toFixed(4)}, ${Number(r.lon).toFixed(4)}`;
+    return `
+      <div class="saved-item" data-id="${r.id}" data-lat="${r.lat}" data-lon="${r.lon}">
+        <div>
+          <div class="title">${escapeHtml(r.label)}</div>
+          <div class="meta">${iso(r.start_date)} → ${iso(r.end_date)} • ${escapeHtml(r.unit)} • ${loc}</div>
+        </div>
+        <div class="actions">
+          <button class="btn view">View</button>
+          <button class="btn edit">Edit</button>
+          <button class="btn danger delete">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
