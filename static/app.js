@@ -206,9 +206,20 @@ if (navigator.geolocation) {
   });
 }
 
-function iso(d){ return d?.toString().slice(0,10); }
+//function iso(d){ return d?.toString().slice(0,11); }
+function iso(d) {
+  if (!d) return "";
+  if (typeof d === "string") {
+    // If it already starts with YYYY-MM-DD, keep just that part.
+    const m = d.match(/^\d{4}-\d{2}-\d{2}/);
+    return m ? m[0] : new Date(d).toISOString().slice(0, 10);
+  }
+  if (d instanceof Date) return d.toISOString().slice(0, 10);
+  if (typeof d === "number") return new Date(d).toISOString().slice(0, 10); // epoch ms
+  return String(d).slice(0, 10);
+}
 function today(){ return new Date().toISOString().slice(0,10); }
-function ensureDates(){
+function ensureDates() {
   const s = startInput.value, e = endInput.value;
   if (!s || !e) throw new Error("Please select both start and end dates.");
   if (e < s) throw new Error("End date must be on/after start date.");
