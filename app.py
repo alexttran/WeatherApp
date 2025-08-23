@@ -397,6 +397,45 @@ def _range_weather_from_open_meteo(lat, lon, start_d: date, end_d: date, unit: s
         })
     return out, temp_unit
 
+@app.get("/api/requests/<int:req_id>/weather")
+def weather_for_saved_request(req_id: int):
+    row = get_request_db(req_id)
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+
+    # row["start_date"]/["end_date"] may already be strings ('YYYY-MM-DD') from the DB;
+    # if they are date objects, .isoformat() handles it the same.
+    try:
+        # Accept both strings and date objects
+        start_s = str(row["start_date"])
+        end_s = str(row["end_date"])
+        start_d = date.fromisoformat(start_s[:10])
+        end_d = date.fromisoformat(end_s[:10])
+    except Exception:
+        return jsonify({"error": "Bad dates in saved request"}), 500
+
+    lat = float(row["lat"])
+    lon = float(row["lon"])
+    unit = row.get("unit", "fahrenheit")
+
+    try:
+        days, temp_unit = _range_weather_from_open_meteo(lat, lon, start_d, end_d, unit)
+    except Exception as e:
+        return jsonify({"error": f"Open-Meteo request failed: {e}"}), 502
+
+    return jsonify({
+        "request": {
+            "id": row["id"],
+            "label": row["label"],
+            "start_date": start_d.isoformat(),
+            "end_date": end_d.isoformat(),
+            "unit": unit,
+            "lat": lat,
+            "lon": lon,
+        },
+        "daily": days,
+        "unit": temp_unit,
+    })
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
