@@ -302,12 +302,12 @@ async function viewSavedRequest(id) {
 }
 
 function renderSavedRange(payload) {
+  const { request, daily } = payload;
   if (!daily || daily.length === 0) {
     currentEl.innerHTML = `<div class="loading">No daily data returned for this range. Try a more recent date window.</div>`;
     forecastEl.innerHTML = "";
     return;
   }
-  const { request, daily } = payload;
   const unit = (payload.unit || request.unit || "fahrenheit");
   // Header card: show label + the exact date range being rendered
   currentEl.innerHTML = `
