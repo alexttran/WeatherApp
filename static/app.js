@@ -290,6 +290,35 @@ function renderSaved(list) {
   }).join("");
 }
 
+async function viewSavedRequest(id) {
+  try {
+    const res = await fetch(`/api/requests/${id}/weather`, { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to load range");
+    renderSavedRange(data);
+  } catch (e) {
+    showError(e.message || "Failed to load range");
+  }
+}
+
+function renderSavedRange(payload) {
+  const { request, daily } = payload;
+  const unit = (payload.unit || request.unit || "fahrenheit");
+  // Header card: show label + the exact date range being rendered
+  currentEl.innerHTML = `
+    <div>
+      <div class="h1" style="font-size:24px; font-weight:800; margin-bottom:4px;">
+        ${escapeHtml(request.label)}
+      </div>
+      <div style="color:#8aa0b6;">
+        ${escapeHtml(request.start_date)} → ${escapeHtml(request.end_date)} • ${unit === 'fahrenheit' ? '°F' : '°C'}
+      </div>
+    </div>
+  `;
+  // Reuse the existing forecast renderer for arbitrary day counts
+  renderForecast(daily, unit);
+}
+
 async function deleteRequest(id) {
   if (!confirm("Delete this request?")) return;
   const res = await fetch(`/api/requests/${id}`, { method: "DELETE", headers: authHeaders() });
@@ -329,9 +358,7 @@ savedListEl.addEventListener("click", (e) => {
   if (!row) return;
   const id = row.dataset.id;
   if (e.target.classList.contains("view")) {
-    const lat = parseFloat(row.dataset.lat), lon = parseFloat(row.dataset.lon);
-    // Reuse the existing weather viewer
-    fetchWeather(lat, lon);
+    viewSavedRequest(id);
   } else if (e.target.classList.contains("edit")) {
     editRequestPrompt(id, row);
   } else if (e.target.classList.contains("delete")) {
