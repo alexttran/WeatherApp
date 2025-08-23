@@ -18,6 +18,9 @@ from crud import (
     delete_request_db,
 )
 
+from datetime import date
+
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -349,6 +352,51 @@ def delete_request_api(req_id: int):
     if not ok:
         return jsonify({"error": "Not found"}), 404
     return jsonify({"message": "Deleted"})
+
+def _range_weather_from_open_meteo(lat, lon, start_d: date, end_d: date, unit: str):
+    """Return list[dict] of daily weather for [start_d, end_d] using the forecast endpoint.
+       If Open-Meteo returns partial/empty results (e.g., far past), we just return what we get.
+    """
+    temp_unit = "fahrenheit" if unit.lower().startswith("f") else "celsius"
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "daily": ",".join([
+            "weather_code",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "precipitation_probability_max",
+            "wind_speed_10m_max",
+            "wind_gusts_10m_max",
+        ]),
+        "start_date": start_d.isoformat(),
+        "end_date": end_d.isoformat(),
+        "timezone": "auto",
+        "temperature_unit": temp_unit,
+        "wind_speed_unit": "mph" if temp_unit == "fahrenheit" else "kmh",
+        "precipitation_unit": "inch" if temp_unit == "fahrenheit" else "mm",
+    }
+    r = requests.get(OPEN_METEO_BASE, params=params, headers=HEADERS, timeout=15)
+    r.raise_for_status()
+    data = r.json() or {}
+    daily = data.get("daily", {}) or {}
+    out = []
+    times = daily.get("time") or []
+    for i, d in enumerate(times):
+        code = (daily.get("weather_code") or [None])[i]
+        out.append({
+            "date": d,
+            "t_max": (daily.get("temperature_2m_max") or [None])[i],
+            "t_min": (daily.get("temperature_2m_min") or [None])[i],
+            "pop": (daily.get("precipitation_probability_max") or [None])[i],
+            "wind_max": (daily.get("wind_speed_10m_max") or [None])[i],
+            "gust_max": (daily.get("wind_gusts_10m_max") or [None])[i],
+            "code": code,
+            "code_text": WMO_TEXT.get(code, "") if code is not None else "",
+            "icon": wmo_to_icon(code, 1),
+        })
+    return out, temp_unit
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
