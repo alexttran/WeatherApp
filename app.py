@@ -25,12 +25,12 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# ====== Configuration ======
+# Configure api keys
 GEOCODIFY_API_KEY = os.getenv("GEOCODIFY_API_KEY", "")
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 HEADERS = {"Accept": "application/json", "User-Agent": "WeatherApp/1.0 (+local)"}
 
-# ====== Helpers ======
+# Regex for detecting coordinates
 COORDS_RE = re.compile(r"^\s*([+-]?(?:\d+(?:\.\d+)?)),\s*([+-]?(?:\d+(?:\.\d+)?))\s*$")
 
 WMO_TEXT = {
@@ -96,6 +96,7 @@ def deg_to_compass(deg: float | None) -> str:
     ]
     return arr[(val % 16)]
 
+# Checks if text is in coordinate format "lat, lon"
 def parse_coords(text: str) -> Tuple[float, float] | None:
     match = COORDS_RE.match(text)
     if match:
@@ -110,6 +111,7 @@ def parse_coords(text: str) -> Tuple[float, float] | None:
 def index():
     return render_template("index.html")
 
+# Calls the api and geocodes the location
 def _geo_get(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
     url = f"https://api.geocodify.com/v2/{endpoint}"
     try:
@@ -121,6 +123,7 @@ def _geo_get(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         return {"_error": str(e)}
 
+# get location suggestions
 def _extract_suggestions(data: Dict[str, Any], limit: int = 10):
     out = []
     if not data:
@@ -146,6 +149,7 @@ def _extract_suggestions(data: Dict[str, Any], limit: int = 10):
             out.append({"label": label, "lat": float(lat), "lon": float(lon)})
     return out
 
+# Autocomplete endpoint
 @app.route("/api/autocomplete")
 def autocomplete():
     q = request.args.get("q", "").strip()
@@ -161,6 +165,7 @@ def autocomplete():
     suggestions = _extract_suggestions(data)
     return jsonify({"suggestions": suggestions})
 
+# Geocode endpoint
 @app.route("/api/geocode")
 def geocode():
     q = request.args.get("q", "").strip()
@@ -181,6 +186,7 @@ def geocode():
     c = data['response']['features'][0]['geometry']['coordinates']
     return jsonify({"label": q, "lat": c[1], "lon": c[0]})
 
+# Gets the weather at a location
 @app.route("/api/weather")
 def weather():
     try:
@@ -268,13 +274,9 @@ def weather():
         "daily": days,
     })
 
+# Start database entry
 @app.post("/api/requests")
 def create_request_api():
-    """
-    Body can be either:
-      {"query":"Eiffel Tower","start_date":"2025-08-01","end_date":"2025-08-05","unit":"fahrenheit"}
-    or {"lat":48.8584,"lon":2.2945,"label":"Eiffel Tower","start_date":"...","end_date":"..."}
-    """
     p = request.get_json(force=True)
     try:
         if "lat" in p and "lon" in p:
@@ -301,7 +303,8 @@ def create_request_api():
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         return jsonify({"error": f"Create failed: {e}"}), 500
-    
+
+# List database entries    
 @app.get("/api/requests")
 def list_requests_api():
     rows = list_requests_db(limit=200)
@@ -315,6 +318,7 @@ def get_request_api(req_id: int):
         return jsonify({"error": "Not found"}), 404
     return jsonify(row)
 
+# Update entry from given edits
 @app.put("/api/requests/<int:req_id>")
 def update_request_api(req_id: int):
     p = request.get_json(force=True)
@@ -345,7 +349,7 @@ def relabel_location_api(loc_id: int):
         return jsonify({"error": "Not found"}), 404
     return jsonify({"message": "Updated"})
 
-
+# Delete entry
 @app.delete("/api/requests/<int:req_id>")
 def delete_request_api(req_id: int):
     ok = delete_request_db(req_id)
@@ -353,6 +357,7 @@ def delete_request_api(req_id: int):
         return jsonify({"error": "Not found"}), 404
     return jsonify({"message": "Deleted"})
 
+# Get weather for database entry
 def _range_weather_from_open_meteo(lat, lon, start_d: date, end_d: date, unit: str):
     """Return list[dict] of daily weather for [start_d, end_d] using the forecast endpoint.
        If Open-Meteo returns partial/empty results (e.g., far past), we just return what we get.

@@ -13,6 +13,7 @@
 </head>
 <body>
   <div class="app">
+    <!-- Header -->
     <header class="header">
       <div>
         <h1>
@@ -34,6 +35,7 @@
       </div>
     </header>
 
+    <!-- Search Bar -->
     <section class="search">
       <div class="searchbar">
         <input id="query" type="text" placeholder="City, ZIP, landmark, or lat,lon…" autocomplete="off" />
@@ -43,6 +45,7 @@
       <p class="hint">Tip: You can paste coordinates like <code>34.05,-118.25</code> or just type a ZIP/City/Landmark.</p>
     </section>
 
+    <!-- Database Entry -->
     <div class="range">
       <input id="startDate" type="date" aria-label="Start date" />
       <input id="endDate" type="date" aria-label="End date" />
@@ -61,6 +64,7 @@
       </section>
     </main>
 
+    <!-- Saved Requests in Database -->
     <section class="card saved">
       <h2>Saved Requests</h2>
       <div id="savedList" class="saved-list">
@@ -68,6 +72,7 @@
       </div>
     </section>
 
+    <!-- Footer-->
     <footer class="footer">
       <small>
         Weather: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · 

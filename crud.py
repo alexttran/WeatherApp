@@ -11,6 +11,7 @@ HEADERS = {"Accept": "application/json", "User-Agent": "WeatherApp/1.0 (+server)
 
 COORDS_RE = re.compile(r"^\s*([+-]?(?:\d+(?:\.\d+)?)),\s*([+-]?(?:\d+(?:\.\d+)?))\s*$")
 
+# Checks if text is in coordinate format
 def parse_coords(text: str) -> Tuple[float, float] | None:
     match = COORDS_RE.match(text)
     if match:
@@ -20,6 +21,7 @@ def parse_coords(text: str) -> Tuple[float, float] | None:
             return (lat, lon)
     return None
 
+# Geocodes a location
 def _geo_get(params: Dict[str, Any]) -> Dict[str, Any]:
     url = f"https://api.geocodify.com/v2/geocode"
     try:
@@ -30,6 +32,7 @@ def _geo_get(params: Dict[str, Any]) -> Dict[str, Any]:
         return r.json()
     except Exception as e:
         return {"_error": str(e)}
+
 
 def resolve_location_from_query(q: str) -> Dict[str, Any]:
     if not GEOCODIFY_API_KEY:
@@ -48,7 +51,7 @@ def resolve_location_from_query(q: str) -> Dict[str, Any]:
     c = data['response']['features'][0]['geometry']['coordinates']
     return {"label": q, "lat": c[1], "lon": c[0]}
     
-
+# Upsets location in database
 def upsert_location(label: str, lat: float, lon: float) -> int:
     sql = """
     INSERT INTO locations (label, lat, lon)
