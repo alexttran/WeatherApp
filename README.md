@@ -12,4 +12,9 @@ You can store weather data for a given location within a given time frame.
 python -m venv .venv \
 source .venv/bin/activate \
 pip install -r requirements.txt \
-python app.p
+python app.py 
+
+OR
+
+Go to this site: \
+https://weatherapp-np1t.onrender.com/
