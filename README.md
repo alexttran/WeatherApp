@@ -1,7 +1,7 @@
 # WeatherApp
 This weather app allows you to access the weather, both current and a few days in the future. \
 The app uses Geocodify to geocode various locations into coordinates, which the Open-Mateo api uses to return weather data. \
-Users can input cities, zip codes, landmarks, and coordinates to recieve weather data. \
+Users can input cities, zip codes, landmarks, and coordinates to receive weather data. \
 I implemented technical assessment #1 and #2.1
 
 # Database
