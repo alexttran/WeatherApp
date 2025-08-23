@@ -14,14 +14,20 @@
 <body>
   <div class="app">
     <header class="header">
-      <h1>🌤️ Weather</h1>
-      <button id="infoBtn"
-        class="icon-btn"
-        aria-haspopup="dialog"
-        aria-controls="infoOverlay"
-        aria-expanded="false"
-        aria-label="About this app">ℹ️
-      </button>
+      <div>
+        <h1>
+          <span>🌤️ Weather</span>
+          <span class="small-text"> by Alex Tran</span>
+        </h1>
+        <button id="infoBtn"
+          type="button"
+          class="icon-btn"
+          aria-haspopup="dialog"
+          aria-controls="infoOverlay"
+          aria-expanded="false"
+          aria-label="About this app">ℹ️ Info
+        </button>
+      </div>
       <div class="unit-toggle" role="group" aria-label="Units">
         <button id="btnF" class="pill active" data-unit="fahrenheit">°F</button>
         <button id="btnC" class="pill" data-unit="celsius">°C</button>
@@ -50,7 +56,7 @@
       </section>
 
       <section class="card forecast">
-        <h2>Next 5 Days</h2>
+        <h2>Upcoming Days</h2>
         <div id="forecast" class="forecast-grid"></div>
       </section>
     </main>
@@ -64,29 +70,29 @@
 
     <footer class="footer">
       <small>
-        Weather: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open‑Meteo</a> · 
+        Weather: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · 
         Geocoding: <a href="https://geocodify.com/" target="_blank" rel="noreferrer">Geocodify</a>
       </small>
     </footer>
   </div>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  
+  <!-- Info Modal Overlay-->
   <div id="infoOverlay" class="overlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <button id="infoClose" type="button" class="icon-btn" aria-label="Close">✕</button>
       <header class="modal-head">
-        <h3 id="infoTitle" class="modal-title">About Breeze</h3>
-        <button id="infoClose" class="icon-btn" aria-label="Close">✕</button>
+        <h3 id="infoTitle" class="modal-title">About PM Accelerator</h3>      
       </header>
       <div class="modal-body">
-        <p><strong>Breeze</strong> shows current weather and a 5-day forecast using Open-Meteo. You can search by city, ZIP/postal code, landmarks, or coordinates, use your current location, and save date-range requests to the database.</p>
-        <ul>
-          <li><b>Search:</b> type a place or paste <code>lat,lon</code>; use 📍 for device location.</li>
-          <li><b>Save to DB:</b> pick a start/end date, then click “Save to DB”.</li>
-          <li><b>Saved Requests:</b> view, edit, or delete past entries.</li>
-        </ul>
-        <p style="color:#8aa0b6">Weather data courtesy of <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>; geocoding via <a href="https://geocodify.com/" target="_blank" rel="noreferrer">Geocodify</a>.</p>
+        <p><strong>PM Accelerator</strong> is a results-oriented career accelerator founded by Dr. Nancy Li. PM Accelerator levels 
+          the playing field for future product managers by making tools and education available to people from all backgrounds. 
+          The company offers training, education, and job opportunities to help dedicated individuals break into a tough industry, 
+          all while investing in PMA Kids, a non-profit focused on helping disadvantaged children.</p>
       </div>
     </div>
   </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

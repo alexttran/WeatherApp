@@ -9,6 +9,7 @@ const forecastEl = $("#forecast");
 const btnF = $("#btnF");
 const btnC = $("#btnC");
 const useLocBtn = $("#useLocation");
+//const infoBtn = $("#infoBtn");
 const startInput = $("#startDate");
 const endInput = $("#endDate");
 const saveBtn = $("#saveReq");
@@ -368,6 +369,65 @@ savedListEl.addEventListener("click", (e) => {
     editRequestPrompt(id, row);
   } else if (e.target.classList.contains("delete")) {
     deleteRequest(id);
+  }
+});
+
+// Modal functions
+function openInfo() {
+  const overlay = document.getElementById("infoOverlay");
+  const closeBtn = document.getElementById("infoClose");
+  const infoBtn = document.getElementById("infoBtn");
+  if (!overlay) return;
+  overlay.classList.add("show");
+  overlay.setAttribute("aria-hidden", "false");
+  if (infoBtn) infoBtn.setAttribute("aria-expanded", "true");
+  // if (closeBtn) closeBtn.focus();
+}
+
+function closeInfo() {
+  const overlay = document.getElementById("infoOverlay");
+  const infoBtn = document.getElementById("infoBtn");
+  if (!overlay) return;
+  overlay.classList.remove("show");
+  overlay.setAttribute("aria-hidden", "true");
+  if (infoBtn) {
+    infoBtn.setAttribute("aria-expanded", "false");
+    // infoBtn.focus();
+  }
+}
+
+// Event delegation so it works even if DOM loads after JS
+document.addEventListener("click", function (e) {
+  const t = e.target;
+  if (!t) return;
+
+  // Open when clicking ℹ️
+  if (t.closest && t.closest("#infoBtn")) {
+    e.preventDefault();
+    openInfo();
+    return;
+  }
+
+  // Close when clicking ✕
+  if (t.closest && t.closest("#infoClose")) {
+    e.preventDefault();
+    closeInfo();
+    return;
+  }
+
+  // Close when clicking the backdrop (outside the modal box)
+  const overlay = document.getElementById("infoOverlay");
+  if (overlay && t === overlay) {
+    closeInfo();
+  }
+});
+
+// Close on Escape
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  const overlay = document.getElementById("infoOverlay");
+  if (overlay && overlay.classList.contains("show")) {
+    closeInfo();
   }
 });
 
